@@ -14,6 +14,7 @@ def bollinger_bands(stock_price, window_size, num_of_std):
 
 
 class CombinedBinHAndClucV3(IStrategy):
+    INTERFACE_VERSION = 3
     minimal_roi = {
         "0": 0.018
     }
@@ -22,10 +23,10 @@ class CombinedBinHAndClucV3(IStrategy):
 
     timeframe = '5m'
 
-    use_sell_signal = True
-    sell_profit_only = True
-    sell_profit_offset = 0.001
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = True
+    exit_profit_offset = 0.001
+    ignore_roi_if_entry_signal = True
 
     # Trailing stoploss
     trailing_stop = True
@@ -43,8 +44,8 @@ class CombinedBinHAndClucV3(IStrategy):
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
@@ -75,7 +76,7 @@ class CombinedBinHAndClucV3(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (  # strategy BinHV45
                 dataframe['lower'].shift().gt(0) &
@@ -91,11 +92,11 @@ class CombinedBinHAndClucV3(IStrategy):
                 (dataframe['close'] < 0.985 * dataframe['bb_lowerband']) &
                 (dataframe['volume'] < (dataframe['volume_mean_slow'].shift(1) * 20)))
             ),
-            'buy'
+            'enter_long'
         ] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         """
         dataframe.loc[
@@ -110,6 +111,6 @@ class CombinedBinHAndClucV3(IStrategy):
                 (dataframe['high'].shift(4) > dataframe['bb_upperband'].shift(4)) &
                 (dataframe['volume'] > 0) # Make sure Volume is not 0
             ),
-            'sell'
+            'exit_long'
         ] = 1
         return dataframe

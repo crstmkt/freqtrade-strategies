@@ -15,6 +15,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class epretrace(IStrategy):
+    INTERFACE_VERSION = 3
     """
 
     author@: ??
@@ -132,7 +133,7 @@ class epretrace(IStrategy):
         
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         #Buy if last 5 candles show a strong downtrend (linear regression angle) and close is inferior to the 25 candle linear regression line - 1 * ATR (over 25 candles)
         dataframe.loc[
             (
@@ -148,9 +149,9 @@ class epretrace(IStrategy):
                 #qtpylib.crossed_above(dataframe['ema25'], dataframe['ema50']) &
                 (dataframe['volume'] > 0)
             ),
-            'buy'] = 1
+            'enter_long'] = 1
         return dataframe
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # Sell if RSI is greater than 31 and close is superior to the 25 candle linear regression line
         dataframe.loc[
             (
@@ -159,7 +160,7 @@ class epretrace(IStrategy):
                 #(dataframe['senkou_a'] > dataframe['senkou_b']) &
                 (dataframe['volume'] > 0)
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
@@ -189,7 +190,7 @@ class epretrace(IStrategy):
             
         return 1
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
                 
         # Obtain pair dataframe.

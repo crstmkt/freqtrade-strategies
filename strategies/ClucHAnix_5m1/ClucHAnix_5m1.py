@@ -27,6 +27,7 @@ def ha_typical_price(bars):
 
 
 class ClucHAnix_5m1(IStrategy):
+    INTERFACE_VERSION = 3
     """
     PASTE OUTPUT FROM HYPEROPT HERE
     Can be overridden for specific sub-strategies (stake currencies) at the bottom.
@@ -76,9 +77,9 @@ class ClucHAnix_5m1(IStrategy):
     timeframe = '5m'
 
     # Make sure these match or are not overridden in config
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     # Custom stoploss
     use_custom_stoploss = True
@@ -87,11 +88,11 @@ class ClucHAnix_5m1(IStrategy):
     startup_candle_count = 168
 
     order_types = {
-        'buy': 'market',
-        'sell': 'market',
-        'emergencysell': 'market',
-        'forcebuy': "market",
-        'forcesell': 'market',
+        'entry': 'market',
+        'exit': 'market',
+        'emergency_exit': 'market',
+        'force_entry': "market",
+        'force_exit': 'market',
         'stoploss': 'market',
         'stoploss_on_exchange': False,
 
@@ -202,7 +203,7 @@ class ClucHAnix_5m1(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
             (
@@ -220,12 +221,12 @@ class ClucHAnix_5m1(IStrategy):
                      (dataframe['ha_close'] < dataframe['ema_slow']) &
                      (dataframe['ha_close'] < self.close_bblower.value * dataframe['bb_lowerband'])
              )),
-            'buy'
+            'enter_long'
         ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
             (dataframe['fisher'] > self.sell_fisher.value) &
@@ -235,7 +236,7 @@ class ClucHAnix_5m1(IStrategy):
             (dataframe['ema_fast'] > dataframe['ha_close']) &
             ((dataframe['ha_close'] * self.sell_bbmiddle_close.value) > dataframe['bb_middleband']) &
             (dataframe['volume'] > 0),
-            'sell'
+            'exit_long'
         ] = 1
 
         return dataframe
@@ -265,7 +266,7 @@ class ClucHAnix_5mTB1(ClucHAnix_5m1):
         'trailing_buy_order_started': False,
         'trailing_buy_order_uplimit': 0,
         'start_trailing_price': 0,
-        'buy_tag': None,
+        'enter_tag': None,
         'start_trailing_time': None,
         'offset': 0,
         'allow_trailing': False,
@@ -329,7 +330,7 @@ class ClucHAnix_5mTB1(ClucHAnix_5m1):
         current_time = datetime.now(timezone.utc)
         trailing_duration = current_time - trailing_buy['start_trailing_time']
         if trailing_duration.total_seconds() > self.trailing_expire_seconds:
-            if ((current_trailing_profit_ratio > 0) and (last_candle['buy'] == 1)):
+            if ((current_trailing_profit_ratio > 0) and (last_candle['enter_long'] == 1)):
                 # more than 1h, price under first signal, buy signal still active -> buy
                 return 'forcebuy'
             else:
@@ -377,13 +378,13 @@ class ClucHAnix_5mTB1(ClucHAnix_5m1):
                     trailing_buy_offset = self.trailing_buy_offset(dataframe, pair, current_price)
 
                     if trailing_buy['allow_trailing']:
-                        if (not trailing_buy['trailing_buy_order_started'] and (last_candle['buy'] == 1)):
+                        if (not trailing_buy['trailing_buy_order_started'] and (last_candle['enter_long'] == 1)):
                             # start trailing buy
 
                             trailing_buy['trailing_buy_order_started'] = True
                             trailing_buy['trailing_buy_order_uplimit'] = last_candle['close']
                             trailing_buy['start_trailing_price'] = last_candle['close']
-                            trailing_buy['buy_tag'] = last_candle['buy_tag']
+                            trailing_buy['enter_tag'] = last_candle['enter_tag']
                             trailing_buy['start_trailing_time'] = datetime.now(timezone.utc)
                             trailing_buy['offset'] = 0
                             
@@ -437,27 +438,27 @@ class ClucHAnix_5mTB1(ClucHAnix_5m1):
         
         return val
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe = super().populate_buy_trend(dataframe, metadata)
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe = super().populate_entry_trend(dataframe, metadata)
 
         if self.trailing_buy_order_enabled and self.config['runmode'].value in ('live', 'dry_run'): 
             last_candle = dataframe.iloc[-1].squeeze()
             trailing_buy = self.trailing_buy(metadata['pair'])
-            if (last_candle['buy'] == 1):
+            if (last_candle['enter_long'] == 1):
                 if not trailing_buy['trailing_buy_order_started']:
                     open_trades = Trade.get_trades([Trade.pair == metadata['pair'], Trade.is_open.is_(True), ]).all()
                     if not open_trades:
                         logger.info(f"Set 'allow_trailing' to True for {metadata['pair']} to start trailing!!!")
                         # self.custom_info_trail_buy[metadata['pair']]['trailing_buy']['allow_trailing'] = True
                         trailing_buy['allow_trailing'] = True
-                        initial_buy_tag = last_candle['buy_tag'] if 'buy_tag' in last_candle else 'buy signal'
-                        dataframe.loc[:, 'buy_tag'] = f"{initial_buy_tag} (start trail price {last_candle['close']})"
+                        initial_buy_tag = last_candle['enter_tag'] if 'enter_tag' in last_candle else 'buy signal'
+                        dataframe.loc[:, 'enter_tag'] = f"{initial_buy_tag} (start trail price {last_candle['close']})"
             else:
                 if (trailing_buy['trailing_buy_order_started'] == True):
                     logger.info(f"Continue trailing for {metadata['pair']}. Manually trigger buy signal!!")
-                    dataframe.loc[:,'buy'] = 1
-                    dataframe.loc[:, 'buy_tag'] = trailing_buy['buy_tag']
-                    # dataframe['buy'] = 1
+                    dataframe.loc[:,'enter_long'] = 1
+                    dataframe.loc[:, 'enter_tag'] = trailing_buy['enter_tag']
+                    # dataframe['enter_long'] = 1
 
         return dataframe
 

@@ -39,7 +39,7 @@ def EWO(dataframe, ema_length=5, ema2_length=35):
 
 
 class SMAOffsetProtectOptV1HO1(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # ROI table:
     minimal_roi = {
@@ -79,10 +79,10 @@ class SMAOffsetProtectOptV1HO1(IStrategy):
     trailing_only_offset_is_reached = True
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.01
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.01
+    ignore_roi_if_entry_signal = False
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
@@ -132,7 +132,7 @@ class SMAOffsetProtectOptV1HO1(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -155,12 +155,12 @@ class SMAOffsetProtectOptV1HO1(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ]=1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -173,7 +173,7 @@ class SMAOffsetProtectOptV1HO1(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ]=1
 
         return dataframe

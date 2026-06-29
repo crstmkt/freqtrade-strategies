@@ -19,7 +19,7 @@ from technical.indicators import zema
 log = logging.getLogger(__name__)
 
 class Nostalgia(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # # ROI table:
     minimal_roi = {
@@ -47,18 +47,18 @@ class Nostalgia(IStrategy):
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = True
 
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = True
+    # These values can be overridden in the "exit_pricing" section in the config.
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = True
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 480
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'trailing_stop_loss': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False
@@ -2327,7 +2327,7 @@ class Nostalgia(IStrategy):
 
         return False, None
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
@@ -2840,7 +2840,7 @@ class Nostalgia(IStrategy):
         return dataframe
 
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         buy_protection_list = []
 
@@ -3345,17 +3345,17 @@ class Nostalgia(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[:,"sell"] = 0
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[:,"exit_long"] = 0
         return dataframe
 
     def confirm_trade_exit(self, pair: str, trade: "Trade", order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, exit_reason: str, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -3371,9 +3371,9 @@ class Nostalgia(IStrategy):
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param sell_reason: Sell reason.
+        :param exit_reason: Sell reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                           'sell_signal', 'force_sell', 'emergency_sell']
+                           'exit_signal', 'force_exit', 'emergency_exit']
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process

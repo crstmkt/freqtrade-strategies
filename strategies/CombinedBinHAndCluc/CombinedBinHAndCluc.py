@@ -15,6 +15,7 @@ def bollinger_bands(stock_price, window_size, num_of_std):
 
 
 class CombinedBinHAndCluc(IStrategy):
+    INTERFACE_VERSION = 3
     # Based on a backtesting:
     # - the best perfomance is reached with "max_open_trades" = 2 (in average for any market),
     #   so it is better to increase "stake_amount" value rather then "max_open_trades" to get more profit
@@ -26,9 +27,9 @@ class CombinedBinHAndCluc(IStrategy):
     stoploss = -0.05
     timeframe = '5m'
 
-    use_sell_signal = True
-    sell_profit_only = True
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = True
+    ignore_roi_if_entry_signal = False
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # strategy BinHV45
@@ -46,7 +47,7 @@ class CombinedBinHAndCluc(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (  # strategy BinHV45
                     dataframe['lower'].shift().gt(0) &
@@ -61,15 +62,15 @@ class CombinedBinHAndCluc(IStrategy):
                     (dataframe['close'] < 0.985 * dataframe['bb_lowerband']) &
                     (dataframe['volume'] < (dataframe['volume_mean_slow'].shift(1) * 20))
             ),
-            'buy'
+            'enter_long'
         ] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         """
         dataframe.loc[
             (dataframe['close'] > dataframe['bb_middleband']),
-            'sell'
+            'exit_long'
         ] = 1
         return dataframe

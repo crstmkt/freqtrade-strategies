@@ -10,6 +10,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class Quickie(IStrategy):
+    INTERFACE_VERSION = 3
     """
 
     author@: Gert Wohlgemuth
@@ -54,7 +55,7 @@ class Quickie(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                     (dataframe['adx'] > 30) &
@@ -63,15 +64,15 @@ class Quickie(IStrategy):
                     (dataframe['sma_200'] > dataframe['close'])
 
             ),
-            'buy'] = 1
+            'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                     (dataframe['adx'] > 70) &
                     (dataframe['tema'] > dataframe['bb_middleband']) &
                     (dataframe['tema'] < dataframe['tema'].shift(1))
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe

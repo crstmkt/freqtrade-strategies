@@ -13,6 +13,7 @@ from freqtrade.strategy import merge_informative_pair, CategoricalParameter, Dec
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 class KC_BB(IStrategy):
+    INTERFACE_VERSION = 3
     """
 
     author @jilv220
@@ -102,7 +103,7 @@ class KC_BB(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
 
@@ -114,11 +115,11 @@ class KC_BB(IStrategy):
                 (dataframe['r_14'] > -90) &
                 (dataframe['ha_closedelta'] > dataframe['ha_close'] * 0.008)
 
-            ,'buy'] = 1
+            ,'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
 
@@ -130,7 +131,7 @@ class KC_BB(IStrategy):
                 (dataframe['ha_close'] * 0.99754 > dataframe['bb_middleband2']) &
                 (dataframe['volume'] > 0)
 
-            ,'sell'] = 1
+            ,'exit_long'] = 1
 
         return dataframe
 

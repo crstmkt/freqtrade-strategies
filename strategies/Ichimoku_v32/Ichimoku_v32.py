@@ -8,6 +8,7 @@ import numpy
 from technical.indicators import ichimoku
 
 class Ichimoku_v32(IStrategy):
+    INTERFACE_VERSION = 3
     """
 
     """
@@ -53,14 +54,14 @@ class Ichimoku_v32(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (qtpylib.crossed_above(dataframe['ha_close'].shift(2), dataframe['senkou_a'])) &
                 (dataframe['ha_close'].shift(2) > dataframe['senkou_a']) &
                 (dataframe['ha_close'].shift(2) > dataframe['senkou_b'])
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         dataframe.loc[
             (
@@ -68,11 +69,11 @@ class Ichimoku_v32(IStrategy):
                 (dataframe['ha_close'].shift(2) > dataframe['senkou_a']) &
                 (dataframe['ha_close'].shift(2 ) > dataframe['senkou_b'])
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (qtpylib.crossed_below(dataframe['tenkan'], dataframe['kijun'])) &
@@ -80,6 +81,6 @@ class Ichimoku_v32(IStrategy):
                 (dataframe['ha_close'] < dataframe['senkou_b']) &
                 (dataframe['cloud_red'] == True)
             ),
-            'sell'] = 1
+            'exit_long'] = 1
 
         return dataframe

@@ -17,6 +17,7 @@ def ha_typical_price(bars):
     return Series(index=bars.index, data=res)
 
 class ClucHAnix_5m(IStrategy):
+    INTERFACE_VERSION = 3
     """
     PASTE OUTPUT FROM HYPEROPT HERE
     Can be overridden for specific sub-strategies (stake currencies) at the bottom.
@@ -66,9 +67,9 @@ class ClucHAnix_5m(IStrategy):
     timeframe = '5m'
 
     # Make sure these match or are not overridden in config
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     # Custom stoploss
     use_custom_stoploss = True
@@ -77,11 +78,11 @@ class ClucHAnix_5m(IStrategy):
     startup_candle_count = 168
 
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
-        'emergencysell': 'limit',
-        'forcebuy': "limit",
-        'forcesell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
+        'emergency_exit': 'limit',
+        'force_entry': "limit",
+        'force_exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False,
 
@@ -186,7 +187,7 @@ class ClucHAnix_5m(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
             (
@@ -204,12 +205,12 @@ class ClucHAnix_5m(IStrategy):
                      (dataframe['ha_close'] < dataframe['ema_slow']) &
                      (dataframe['ha_close'] < self.close_bblower.value * dataframe['bb_lowerband'])
              )),
-            'buy'
+            'enter_long'
         ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
             (dataframe['fisher'] > self.sell_fisher.value) &
@@ -219,7 +220,7 @@ class ClucHAnix_5m(IStrategy):
             (dataframe['ema_fast'] > dataframe['ha_close']) &
             ((dataframe['ha_close'] * self.sell_bbmiddle_close.value) > dataframe['bb_middleband']) &
             (dataframe['volume'] > 0),
-            'sell'
+            'exit_long'
         ] = 1
 
         return dataframe

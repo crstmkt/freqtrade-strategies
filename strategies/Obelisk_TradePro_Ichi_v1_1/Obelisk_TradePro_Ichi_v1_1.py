@@ -26,6 +26,7 @@ from datetime import datetime, timedelta
 # Does not attempt to emulate the risk/reward take-profit/stop-loss, so the sell criteria are mine.
 
 class Obelisk_TradePro_Ichi_v1_1(IStrategy):
+    INTERFACE_VERSION = 3
 
     # Optimal timeframe for the strategy
     timeframe = '1h'
@@ -129,17 +130,17 @@ class Obelisk_TradePro_Ichi_v1_1(IStrategy):
         return dataframe
 
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
 
             qtpylib.crossed_above(dataframe['go_long'], 0),
 
-        'buy'] = 1
+        'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
 
@@ -147,7 +148,7 @@ class Obelisk_TradePro_Ichi_v1_1(IStrategy):
             | 
             qtpylib.crossed_below(dataframe['close'], dataframe['kijun_sen']),
 
-        'sell'] = 1
+        'exit_long'] = 1
 
         return dataframe
 

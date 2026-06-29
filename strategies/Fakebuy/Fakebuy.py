@@ -23,6 +23,7 @@ def bollinger_bands(stock_price, window_size, num_of_std):
     return np.nan_to_num(rolling_mean), np.nan_to_num(lower_band)
 
 class Fakebuy(IStrategy):
+    INTERFACE_VERSION = 3
 
     timeframe = '5m'
     inf_timeframe = '1h'
@@ -47,9 +48,9 @@ class Fakebuy(IStrategy):
     # Stoploss:
     stoploss = -0.085
 
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = True
 
     startup_candle_count: int = 168
 
@@ -119,12 +120,12 @@ class Fakebuy(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.buy_params
         trade_data = self.custom_trade_info[metadata['pair']]
         conditions = []
 
-        # Persist a buy signal for existing trades to make use of ignore_roi_if_buy_signal = True
+        # Persist a buy signal for existing trades to make use of ignore_roi_if_entry_signal = True
         # when this buy signal is not present a sell can happen according to ROI table
         if trade_data['active_trade']:
             if (trade_data['peak_profit'] > 0):
@@ -162,11 +163,11 @@ class Fakebuy(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
+                'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         trade_data = self.custom_trade_info[metadata['pair']]
         conditions = []
         
@@ -195,7 +196,7 @@ class Fakebuy(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'sell'] = 1
+                'exit_long'] = 1
         
         return dataframe
 
@@ -206,7 +207,7 @@ class Fakebuy(IStrategy):
         """
         # Using ticker seems significantly faster than orderbook.
         side = "asks"
-        if (self.config['ask_strategy']['price_side'] == "bid"):
+        if (self.config['exit_pricing']['price_side'] == "bid"):
             side = "bids"
         
         ob = self.dp.orderbook(pair, 1)
@@ -222,7 +223,7 @@ class Fakebuy(IStrategy):
     Price protection on trade entry and timeouts, built-in Freqtrade functionality
     https://www.freqtrade.io/en/latest/strategy-advanced/
     """
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_entry_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 1% above the order.
@@ -230,7 +231,7 @@ class Fakebuy(IStrategy):
             return True
         return False
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_exit_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]
         # Cancel sell order if price is more than 1% below the order.

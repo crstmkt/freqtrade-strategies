@@ -16,6 +16,7 @@ from freqtrade.strategy.hyper import (CategoricalParameter, DecimalParameter, In
 
 
 class MarketChyperHyperStrategy(IStrategy):
+    INTERFACE_VERSION = 3
 
     # If enabled all Weighted Signal results will be added to the dataframe for easy debugging with BreakPoints
     # Warning: Disable this for anything else then debugging in an IDE! (Integrated Development Environment)
@@ -90,10 +91,10 @@ class MarketChyperHyperStrategy(IStrategy):
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False
 
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    # These values can be overridden in the "exit_pricing" section in the config.
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 400
@@ -102,16 +103,16 @@ class MarketChyperHyperStrategy(IStrategy):
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
 
     # Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc'
+        'entry': 'gtc',
+        'exit': 'gtc'
     }
 
 
@@ -303,7 +304,7 @@ class MarketChyperHyperStrategy(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame populated with indicators
@@ -353,21 +354,21 @@ class MarketChyperHyperStrategy(IStrategy):
             ) | (
                     (dataframe['trend'] == 'upwards') &
                     (dataframe['total_buy_signal_strength'] >= self.buy_uptrend_total_signal_needed.value)
-            ), 'buy'] = 1
+            ), 'enter_long'] = 1
 
         # Override Buy Signal: When configured buy signals can be completely turned off for each kind of trend
         if not self.buy___trades_when_downwards.value:
-            dataframe.loc[dataframe['trend'] == 'downwards', 'buy'] = 0
+            dataframe.loc[dataframe['trend'] == 'downwards', 'enter_long'] = 0
         if not self.buy___trades_when_sideways.value:
-            dataframe.loc[dataframe['trend'] == 'sideways', 'buy'] = 0
+            dataframe.loc[dataframe['trend'] == 'sideways', 'enter_long'] = 0
         if not self.buy___trades_when_upwards.value:
-            dataframe.loc[dataframe['trend'] == 'upwards', 'buy'] = 0
+            dataframe.loc[dataframe['trend'] == 'upwards', 'enter_long'] = 0
 
         return dataframe
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe = self.market_cipher(dataframe)
 
        #CALCULATE WT OVERSOLD
@@ -411,7 +412,7 @@ class MarketChyperHyperStrategy(IStrategy):
             ) | (
                     (dataframe['trend'] == 'upwards') &
                     (dataframe['total_sell_signal_strength'] >= self.sell_uptrend_total_signal_needed.value)
-            ), 'sell'] = 1
+            ), 'exit_long'] = 1
 
 
         return dataframe

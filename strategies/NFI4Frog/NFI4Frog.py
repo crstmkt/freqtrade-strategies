@@ -29,9 +29,9 @@ from skopt.space import Dimension
 ##   Highly recommended to blacklist leveraged tokens (*BULL, *BEAR, *UP, *DOWN etc).                    ##
 ##   Ensure that you don't override any variables in you config.json. Especially                         ##
 ##   the timeframe (must be 5m).                                                                         ##
-##     use_sell_signal must set to true (or not set at all).                                             ##
-##     sell_profit_only must set to false (or not set at all).                                           ##
-##     ignore_roi_if_buy_signal must set to true (or not set at all).                                    ##
+##     use_exit_signal must set to true (or not set at all).                                             ##
+##     exit_profit_only must set to false (or not set at all).                                           ##
+##     ignore_roi_if_entry_signal must set to true (or not set at all).                                    ##
 ##                                                                                                       ##
 ###########################################################################################################
 ##               DONATIONS                                                                               ##
@@ -46,7 +46,7 @@ from skopt.space import Dimension
 
 
 class NFI4Frog(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # # ROI table:
     minimal_roi = {
@@ -72,10 +72,10 @@ class NFI4Frog(IStrategy):
 
     custom_trade_info = {}
 
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = True
+    # These values can be overridden in the "exit_pricing" section in the config.
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = True
 
     use_dynamic_roi = False
 
@@ -84,8 +84,8 @@ class NFI4Frog(IStrategy):
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'trailing_stop_loss': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False
@@ -439,7 +439,7 @@ class NFI4Frog(IStrategy):
     def get_ticker_indicator(self):
         return int(self.timeframe[:-1])
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
@@ -613,7 +613,7 @@ class NFI4Frog(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -945,7 +945,7 @@ class NFI4Frog(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ] = 1
 
         dataframe.loc[
@@ -1005,11 +1005,11 @@ class NFI4Frog(IStrategy):
                     (dataframe['volume'] > 0)                    
                 )
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -1103,7 +1103,7 @@ class NFI4Frog(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ] = 1
 
         dataframe.loc[
@@ -1134,7 +1134,7 @@ class NFI4Frog(IStrategy):
                     (dataframe['volume'] > 0)                    
                 )
             ),
-            'sell'] = 1
+            'exit_long'] = 1
 
         return dataframe
 
@@ -1237,10 +1237,10 @@ class NFI4Frog(IStrategy):
             if rate:
                 return rate
 
-        ask_strategy = self.config.get('ask_strategy', {})
-        if ask_strategy.get('use_order_book', False):
+        exit_pricing = self.config.get('exit_pricing', {})
+        if exit_pricing.get('use_order_book', False):
             ob = self.dp.orderbook(pair, 1)
-            rate = ob[f"{ask_strategy['price_side']}s"][0][0]
+            rate = ob[f"{exit_pricing['price_side']}s"][0][0]
         else:
             ticker = self.dp.ticker(pair)
             rate = ticker['last']

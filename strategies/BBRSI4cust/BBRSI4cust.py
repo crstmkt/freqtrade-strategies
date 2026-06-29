@@ -154,7 +154,7 @@ class BBRSI4cust(IStrategy):
     def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float, current_profit: float, **kwargs):
         """
         Sell only when matching some criteria other than those used to generate the sell signal
-        :return: str sell_reason, if any, otherwise None
+        :return: str exit_reason, if any, otherwise None
         """
         # get dataframe
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)

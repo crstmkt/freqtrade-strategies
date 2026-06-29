@@ -36,7 +36,7 @@ from functools import reduce
 ##   Ensure that you don't override any variables in your config.json. Especially                        ##
 ##   the timeframe (must be 5m).                                                                         ##
 ##                                                                                                       ##
-##   sell_profit_only:                                                                                   ##
+##   exit_profit_only:                                                                                   ##
 ##       True - risk more (gives you higher profit and higher Drawdown)                                  ##
 ##       False (default) - risk less (gives you less ~10-15% profit and much lower Drawdown)             ##
 ##                                                                                                       ##
@@ -55,7 +55,7 @@ from functools import reduce
 
 
 class BigZ07(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     minimal_roi = {
         "0": 0.028,         # I feel lucky!
@@ -71,10 +71,10 @@ class BigZ07(IStrategy):
     inf_1h = '1h'
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.001 # it doesn't meant anything, just to guarantee there is a minimal profit.
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.001 # it doesn't meant anything, just to guarantee there is a minimal profit.
+    ignore_roi_if_entry_signal = False
 
     # Trailing stoploss
     trailing_stop = False
@@ -93,8 +93,8 @@ class BigZ07(IStrategy):
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'market',
-        'sell': 'market',
+        'entry': 'market',
+        'exit': 'market',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
@@ -159,7 +159,7 @@ class BigZ07(IStrategy):
     buy_macd_2 = DecimalParameter(0.01, 0.09, default=0.03, space='buy', decimals=2, optimize=False, load=True)
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, exit_reason: str, **kwargs) -> bool:
 
 
         return True
@@ -168,7 +168,7 @@ class BigZ07(IStrategy):
         last_candle = dataframe.iloc[-1].squeeze()
         last_candle_1 = dataframe.iloc[-2].squeeze()
 
-        if (sell_reason == 'roi'):
+        if (exit_reason == 'roi'):
             # Looks like we can get a little have more
             if (last_candle['cmf'] < -0.1) & (last_candle['close'] > last_candle['ema_200_1h']):
                 return False
@@ -176,7 +176,7 @@ class BigZ07(IStrategy):
         return True
 
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
 
         return False
@@ -289,7 +289,7 @@ class BigZ07(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         conditions = []
 
@@ -549,19 +549,19 @@ class BigZ07(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['close'] > dataframe['bb_middleband'] * 1.01) &                  # Don't be gready, sell fast
                 (dataframe['volume'] > 0) # Make sure Volume is not 0
             )
             ,
-            'sell'
+            'exit_long'
         ] = 0
         return dataframe
 

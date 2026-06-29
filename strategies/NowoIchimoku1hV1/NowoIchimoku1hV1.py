@@ -61,12 +61,13 @@ def bollinger_bands(series: Series, moving_average='sma', length=20, mult=2.0) -
 
 
 class NowoIchimoku1hV1(IStrategy):
+    INTERFACE_VERSION = 3
     # Optimal timeframe for the strategy
     timeframe = '1h'
 
     startup_candle_count = 100
 
-    use_sell_signal = False
+    use_exit_signal = False
 
     use_custom_stoploss = True
 
@@ -92,7 +93,7 @@ class NowoIchimoku1hV1(IStrategy):
         },
     }
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -166,7 +167,7 @@ class NowoIchimoku1hV1(IStrategy):
 
         return df
 
-    def populate_buy_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df['is_cloud_green'] = df['lead_1'] > df['lead_2']
 
         double_shifted_upper_cloud = df['upper_cloud'].shift(50)
@@ -190,7 +191,7 @@ class NowoIchimoku1hV1(IStrategy):
         for i in range(101, len(df)):
             df.loc[i, 'buy_allowed'] = df.loc[i - 1, 'buy_allowed']
 
-            if df.loc[i - 1, 'buy']:
+            if df.loc[i - 1, 'enter_long']:
                 df.loc[i, 'buy_allowed'] = False
 
             elif not df.loc[i, 'is_cloud_green']:
@@ -198,10 +199,10 @@ class NowoIchimoku1hV1(IStrategy):
 
         df.loc[
             (df['buy_allowed'] & df['should_buy'])
-            , 'buy'] = 1
+            , 'enter_long'] = 1
 
         return df
 
-    def populate_sell_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        df['sell'] = 0
+    def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        df['exit_long'] = 0
         return df

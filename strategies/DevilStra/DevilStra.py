@@ -534,6 +534,7 @@ def condition_generator(dataframe, operator, indicator, crossed_indicator, real_
 
 
 class DevilStra(IStrategy):
+    INTERFACE_VERSION = 3
     # #################### RESULT PASTE PLACE ####################
     # 16/16:    108 trades. 75/18/15 Wins/Draws/Losses. Avg profit   7.77%. Median profit   8.89%. Total profit  0.08404983 BTC (  84.05Σ%). Avg duration 3 days, 6:49:00 min. Objective: -11.22849
 
@@ -583,7 +584,7 @@ class DevilStra(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         pairs = self.dp.current_whitelist()
         pairs_len = len(pairs)
@@ -647,13 +648,13 @@ class DevilStra(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'buy']=1
+                'enter_long']=1
 
         # print(len(dataframe.keys()))
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         pairs = self.dp.current_whitelist()
         pairs_len = len(pairs)
@@ -717,5 +718,5 @@ class DevilStra(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'sell']=1
+                'exit_long']=1
         return dataframe

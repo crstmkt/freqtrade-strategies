@@ -12,6 +12,7 @@ def bollinger_bands(stock_price, window_size, num_of_std):
     return np.nan_to_num(rolling_mean), np.nan_to_num(lower_band)
 
 class Cluc5werk(IStrategy):
+    INTERFACE_VERSION = 3
 
     """
     PASTE OUTPUT FROM HYPEROPT HERE
@@ -60,10 +61,10 @@ class Cluc5werk(IStrategy):
     timeframe = '1m'
 
     # Make sure these match or are not overridden in config
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.0
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.0
+    ignore_roi_if_entry_signal = True
 
     def informative_pairs(self):
         pairs = self.dp.current_whitelist()
@@ -93,7 +94,7 @@ class Cluc5werk(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.buy_params
 
         dataframe.loc[
@@ -121,12 +122,12 @@ class Cluc5werk(IStrategy):
             (dataframe['fake_buy'].eq(1)) &
             (dataframe['volume'] > 0)
             ,
-            'buy'
+            'enter_long'
         ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.sell_params
 
         dataframe.loc[
@@ -136,7 +137,7 @@ class Cluc5werk(IStrategy):
             ((dataframe['close'] * params['sell-bbmiddle-close']) > dataframe['bb_middleband']) &
             (dataframe['volume'] > 0)
             ,
-            'sell'
+            'exit_long'
         ] = 1
 
         return dataframe

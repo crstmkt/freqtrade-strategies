@@ -63,7 +63,7 @@ def EWO(dataframe, ema_length=5, ema2_length=35):
 
 
 class BigZ04_TSL4(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     minimal_roi = {
         "0": 100.0
@@ -75,10 +75,10 @@ class BigZ04_TSL4(IStrategy):
     inf_1h = '1h'
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.001 # it doesn't meant anything, just to guarantee there is a minimal profit.
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.001 # it doesn't meant anything, just to guarantee there is a minimal profit.
+    ignore_roi_if_entry_signal = False
 
     # Trailing stoploss
     trailing_stop = False
@@ -97,8 +97,8 @@ class BigZ04_TSL4(IStrategy):
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'market',
-        'sell': 'market',
+        'entry': 'market',
+        'exit': 'market',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
@@ -205,11 +205,11 @@ class BigZ04_TSL4(IStrategy):
 
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, exit_reason: str, **kwargs) -> bool:
         return True
 
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         return False
 
@@ -307,7 +307,7 @@ class BigZ04_TSL4(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         conditions = []
 
@@ -554,19 +554,19 @@ class BigZ04_TSL4(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['close'] > dataframe['bb_middleband'] * 1.01) &                  # Don't be gready, sell fast
                 (dataframe['volume'] > 0) # Make sure Volume is not 0
             )
             ,
-            'sell'
+            'exit_long'
         ] = 0
 
         return dataframe

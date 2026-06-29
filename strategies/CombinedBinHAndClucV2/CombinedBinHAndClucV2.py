@@ -31,6 +31,7 @@ def SSLChannels(dataframe, length = 7):
 
 
 class CombinedBinHAndClucV2(IStrategy):
+    INTERFACE_VERSION = 3
     minimal_roi = {
         '120': 0.01,
         '60': 0.02,
@@ -43,9 +44,9 @@ class CombinedBinHAndClucV2(IStrategy):
 
     stoploss = -0.05
 
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = True
 
     protections = [
         {
@@ -126,7 +127,7 @@ class CombinedBinHAndClucV2(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (dataframe['go_long'] > 0)
             &
@@ -145,17 +146,17 @@ class CombinedBinHAndClucV2(IStrategy):
                     (dataframe['volume'] < (dataframe['volume_mean_slow'].shift(1) * 20))
                 )
              ),
-            'buy'
+            'enter_long'
         ] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         """
         dataframe.loc[
             (
                 (qtpylib.crossed_below(dataframe['close'], dataframe['bb_upperband']))
             ),
-            'sell'
+            'exit_long'
         ] = 1
         return dataframe

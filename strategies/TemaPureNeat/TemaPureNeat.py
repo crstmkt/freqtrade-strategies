@@ -18,6 +18,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class TemaPureNeat(IStrategy):
+    INTERFACE_VERSION = 3
     """
     Sample strategy implementing Informative Pairs - compares stake_currency with USDT.
     Not performing very well - but should serve as an example how to use a referential pair against USDT.
@@ -56,9 +57,9 @@ class TemaPureNeat(IStrategy):
     ta_on_candle = False
 
     # Experimental settings (configuration will overide these if set)
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
 
     def informative_pairs(self):
@@ -99,7 +100,7 @@ class TemaPureNeat(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
@@ -115,11 +116,11 @@ class TemaPureNeat(IStrategy):
                   
                 
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
@@ -133,6 +134,6 @@ class TemaPureNeat(IStrategy):
             ((qtpylib.crossed_below(dataframe["CMO"],-58)))
                 
             ),
-            'sell'] = 1        
+            'exit_long'] = 1        
         
         return dataframe

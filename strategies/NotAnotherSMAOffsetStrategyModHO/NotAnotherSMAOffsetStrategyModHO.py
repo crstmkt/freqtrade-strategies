@@ -97,7 +97,7 @@ def EWO(dataframe, ema_length=5, ema2_length=35):
 
 
 class NotAnotherSMAOffsetStrategyModHO(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # ROI table:
     minimal_roi = {
@@ -143,15 +143,15 @@ class NotAnotherSMAOffsetStrategyModHO(IStrategy):
     use_custom_stoploss = True
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.01
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.01
+    ignore_roi_if_entry_signal = True
 
     # Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'ioc'
+        'entry': 'gtc',
+        'exit': 'ioc'
     }
 
     # Optimal timeframe for the strategy
@@ -174,7 +174,7 @@ class NotAnotherSMAOffsetStrategyModHO(IStrategy):
     }
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -182,8 +182,8 @@ class NotAnotherSMAOffsetStrategyModHO(IStrategy):
         previous_candle_1 = dataframe.iloc[-2]
 
         if (last_candle is not None):
-            #            if (sell_reason in ['roi','sell_signal','trailing_stop_loss']):
-            if (sell_reason in ['sell_signal']):
+            #            if (exit_reason in ['roi','exit_signal','trailing_stop_loss']):
+            if (exit_reason in ['exit_signal']):
                 if last_candle['block_trade_exit']:
                     return False
                 if last_candle['di_up'] and (last_candle['adx'] > previous_candle_1['adx']):
@@ -277,7 +277,7 @@ class NotAnotherSMAOffsetStrategyModHO(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -312,12 +312,12 @@ class NotAnotherSMAOffsetStrategyModHO(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ]=1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -341,7 +341,7 @@ class NotAnotherSMAOffsetStrategyModHO(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ]=1
 
         return dataframe

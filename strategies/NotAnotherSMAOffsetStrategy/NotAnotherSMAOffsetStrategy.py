@@ -45,7 +45,7 @@ def EWO(dataframe, ema_length=5, ema2_length=35):
 
 
 class NotAnotherSMAOffsetStrategy(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # ROI table:
     minimal_roi = {
@@ -92,15 +92,15 @@ class NotAnotherSMAOffsetStrategy(IStrategy):
     trailing_only_offset_is_reached = True
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.01
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.01
+    ignore_roi_if_entry_signal = False
 
     ## Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'ioc'
+        'entry': 'gtc',
+        'exit': 'ioc'
     }
 
     # Optimal timeframe for the strategy
@@ -117,7 +117,7 @@ class NotAnotherSMAOffsetStrategy(IStrategy):
         },
     }
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -125,7 +125,7 @@ class NotAnotherSMAOffsetStrategy(IStrategy):
 
 
         if (last_candle is not None):
-            if (sell_reason in ['sell_signal']):
+            if (exit_reason in ['exit_signal']):
                 if (last_candle['hma_50']*1.149 > last_candle['ema_100']) and (last_candle['close'] < last_candle['ema_100']*0.951): #*1.2
                     return False
         return True
@@ -156,7 +156,7 @@ class NotAnotherSMAOffsetStrategy(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     
         dataframe.loc[
         (
@@ -167,7 +167,7 @@ class NotAnotherSMAOffsetStrategy(IStrategy):
                 (dataframe['volume'] > 0)&
                 (dataframe['close'] < (dataframe[f'ma_sell_{self.base_nb_candles_sell.value}'] * self.high_offset.value))
         ),
-        ['buy', 'buy_tag']] = (1, 'ewo1')
+        ['enter_long', 'enter_tag']] = (1, 'ewo1')
 
 
         dataframe.loc[
@@ -180,7 +180,7 @@ class NotAnotherSMAOffsetStrategy(IStrategy):
                 (dataframe['close'] < (dataframe[f'ma_sell_{self.base_nb_candles_sell.value}'] * self.high_offset.value))&
                 (dataframe['rsi']<25)
         ),
-        ['buy', 'buy_tag']] = (1, 'ewo2')
+        ['enter_long', 'enter_tag']] = (1, 'ewo2')
 
     
         dataframe.loc[
@@ -191,11 +191,11 @@ class NotAnotherSMAOffsetStrategy(IStrategy):
                 (dataframe['volume'] > 0)&
                 (dataframe['close'] < (dataframe[f'ma_sell_{self.base_nb_candles_sell.value}'] * self.high_offset.value))
         ),
-        ['buy', 'buy_tag']] = (1, 'ewolow')
+        ['enter_long', 'enter_tag']] = (1, 'ewolow')
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -218,7 +218,7 @@ class NotAnotherSMAOffsetStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ]=1
 
         return dataframe

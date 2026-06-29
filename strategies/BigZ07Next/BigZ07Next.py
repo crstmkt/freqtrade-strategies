@@ -26,9 +26,9 @@ from technical.indicators import zema
 ##   Highly recommended to blacklist leveraged tokens (*BULL, *BEAR, *UP, *DOWN etc).                    ##
 ##   Ensure that you don't override any variables in you config.json. Especially                         ##
 ##   the timeframe (must be 5m).                                                                         ##
-##     use_sell_signal must set to true (or not set at all).                                             ##
-##     sell_profit_only must set to false (or not set at all).                                           ##
-##     ignore_roi_if_buy_signal must set to true (or not set at all).                                    ##
+##     use_exit_signal must set to true (or not set at all).                                             ##
+##     exit_profit_only must set to false (or not set at all).                                           ##
+##     ignore_roi_if_entry_signal must set to true (or not set at all).                                    ##
 ##                                                                                                       ##
 ###########################################################################################################
 ##               DONATIONS                                                                               ##
@@ -43,7 +43,7 @@ from technical.indicators import zema
 
 
 class BigZ07Next(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # # ROI table:
     minimal_roi = {
@@ -72,19 +72,19 @@ class BigZ07Next(IStrategy):
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = True
 
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.001 # it doesn't meant anything, just to guarantee there is a minimal profit.
-    ignore_roi_if_buy_signal = False
+    # These values can be overridden in the "exit_pricing" section in the config.
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.001 # it doesn't meant anything, just to guarantee there is a minimal profit.
+    ignore_roi_if_entry_signal = False
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 400
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'market',
-        'sell': 'market',
+        'entry': 'market',
+        'exit': 'market',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
@@ -398,7 +398,7 @@ class BigZ07Next(IStrategy):
     #############################################################
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, exit_reason: str, **kwargs) -> bool:
 
 
         return True
@@ -407,7 +407,7 @@ class BigZ07Next(IStrategy):
         last_candle = dataframe.iloc[-1].squeeze()
         last_candle_1 = dataframe.iloc[-2].squeeze()
 
-        if (sell_reason == 'roi'):
+        if (exit_reason == 'roi'):
             # Looks like we can get a little have more
             if (last_candle['cmf'] < -0.1) & (last_candle['close'] > last_candle['ema_200_1h']):
                 return False
@@ -417,7 +417,7 @@ class BigZ07Next(IStrategy):
     def get_ticker_indicator(self):
         return int(self.timeframe[:-1])
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
@@ -886,7 +886,7 @@ class BigZ07Next(IStrategy):
         return dataframe
 
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         conditions = []
 
@@ -1146,12 +1146,12 @@ class BigZ07Next(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -1234,7 +1234,7 @@ class BigZ07Next(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ] = 1
 
         return dataframe

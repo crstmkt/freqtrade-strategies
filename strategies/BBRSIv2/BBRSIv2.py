@@ -13,6 +13,7 @@ from functools import reduce
 
 
 class BBRSIv2(IStrategy):
+    INTERFACE_VERSION = 3
     """
     author@: Gert Wohlgemuth
     converted from:
@@ -31,10 +32,10 @@ class BBRSIv2(IStrategy):
     stoploss = -0.99
     
     process_only_new_candles = True  
-    use_sell_signal = True
-    sell_profit_only = True
-    sell_profit_offset= 0.01
-    ignore_roi_if_buy_signal = False    
+    use_exit_signal = True
+    exit_profit_only = True
+    exit_profit_offset= 0.01
+    ignore_roi_if_entry_signal = False    
     use_custom_stoploss = True
   
 
@@ -104,8 +105,8 @@ class BBRSIv2(IStrategy):
 
         return dataframe 
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[:, 'buy_tag'] = ''
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[:, 'enter_tag'] = ''
         conditions = []
 #        dont_buy_conditions = []     
         
@@ -114,7 +115,7 @@ class BBRSIv2(IStrategy):
                 (qtpylib.crossed_above(dataframe['rsi'], 35)) &  # Signal: RSI crosses above 35
                 (dataframe['close'] < dataframe['bb_lowerband']) 
                 )
-        dataframe.loc[RB1, 'buy_tag'] += 'RB1:BB_LOWER '        
+        dataframe.loc[RB1, 'enter_tag'] += 'RB1:BB_LOWER '        
         conditions.append(RB1)
         
         RB2 = ( 
@@ -124,7 +125,7 @@ class BBRSIv2(IStrategy):
                 (dataframe["volume"] > 0)  # Make sure Volume is not 0 
                 
                 )
-        dataframe.loc[RB2, 'buy_tag'] += 'RB2:RSI<23_ '        
+        dataframe.loc[RB2, 'enter_tag'] += 'RB2:RSI<23_ '        
         conditions.append(RB2)
         
         
@@ -136,10 +137,10 @@ class BBRSIv2(IStrategy):
                            #is_additional_check & 
                            #can_buy &
                            #is_live_data & 
-                           reduce(lambda x, y: x | y, conditions),'buy'] = 1
+                           reduce(lambda x, y: x | y, conditions),'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         dataframe.loc[:, 'exit_tag'] = ''
         #sell_now = []     
@@ -158,7 +159,7 @@ class BBRSIv2(IStrategy):
                           
                            #can_sell &
                            #is_live_data & 
-                           reduce(lambda x, y: x | y, conditions),'sell'] = 1
+                           reduce(lambda x, y: x | y, conditions),'exit_long'] = 1
 
         
 

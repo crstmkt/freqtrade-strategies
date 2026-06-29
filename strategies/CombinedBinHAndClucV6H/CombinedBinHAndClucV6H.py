@@ -31,7 +31,7 @@ from functools import reduce
 ##   Prefer stable coin (USDT, BUSDT etc) pairs, instead of BTC or ETH pairs.                            ##
 ##   Highly recommended to blacklist leveraged tokens (*BULL, *BEAR, *UP, *DOWN etc).                    ##
 ##   Ensure that you don't override any variables in you config.json. Especially                         ##
-##   the timeframe (must be 5m) & sell_profit_only (must be true).                                       ##
+##   the timeframe (must be 5m) & exit_profit_only (must be true).                                       ##
 ##                                                                                                       ##
 ###########################################################################################################
 ##               DONATIONS                                                                               ##
@@ -50,6 +50,7 @@ logger = logging.getLogger(__name__)
 # -------------------------------------------------------------------------------------------------
 
 class CombinedBinHAndClucV6H(IStrategy):
+    INTERFACE_VERSION = 3
 
     minimal_roi = {
         "0": 0.0181
@@ -77,10 +78,10 @@ class CombinedBinHAndClucV6H(IStrategy):
     process_only_new_candles = False
 
 
-    use_sell_signal = True
-    sell_profit_only = True
-    sell_profit_offset = 0.001
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = True
+    exit_profit_offset = 0.001
+    ignore_roi_if_entry_signal = True
 
     # hyperspace default buy params 
     buy_params = {
@@ -267,7 +268,7 @@ class CombinedBinHAndClucV6H(IStrategy):
     """
     Buy Signal
     """
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         conditions = []
       
@@ -351,13 +352,13 @@ class CombinedBinHAndClucV6H(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'buy'
+                'enter_long'
             ] = 1
 
         # verbose logging enable only for verbose information or troubleshooting
         if self.cust_log_verbose == True:
             for index, row in dataframe.iterrows():
-                if row['buy'] == 1:               
+                if row['enter_long'] == 1:               
                     buy_cond_details = f"count={int(row['conditions_count'])}/bin={int(row['buy_cond_bin'])}/cluc={int(row['buy_cond_cluc'])}/long={int(row['buy_cond_long'])}"
                     logger.info(f"{metadata['pair']} - candle: {row['date']} - buy condition - details: {buy_cond_details}")
 
@@ -367,7 +368,7 @@ class CombinedBinHAndClucV6H(IStrategy):
     """
     Sell Signal
     """
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         conditions = []
 
@@ -380,7 +381,7 @@ class CombinedBinHAndClucV6H(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'sell'
+                'exit_long'
             ] = 1
 
         return dataframe
@@ -400,19 +401,19 @@ class CombinedBinHAndClucV6H(IStrategy):
     """
     Trade Exit Confirmation
     """
-    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float, rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float, rate: float, time_in_force: str, exit_reason: str, **kwargs) -> bool:
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
 
         if self.cust_log_verbose == True:
-            logger.info(f"{pair} - candle: {last_candle['date']} - exit trade {sell_reason} with profit {trade.calc_profit_ratio(rate)}")
+            logger.info(f"{pair} - candle: {last_candle['date']} - exit trade {exit_reason} with profit {trade.calc_profit_ratio(rate)}")
 
         # failsafe for user triggered forced sells > always have highest prio!
-        if sell_reason == 'force_sell':
+        if exit_reason == 'force_exit':
             return True
 
         # Prevent ROI trigger, if there is more potential, in order to maximize profit
-        if last_candle is not None and ((sell_reason == 'roi') ):
+        if last_candle is not None and ((exit_reason == 'roi') ):
             rsi = 0
             if 'rsi' in last_candle.index:
                 rsi = last_candle['rsi']

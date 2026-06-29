@@ -9,6 +9,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class BBRSI21(IStrategy):
+    INTERFACE_VERSION = 3
     """
 
     author@: Gert Wohlgemuth
@@ -51,7 +52,7 @@ class BBRSI21(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators.
         Can be a copy of the corresponding method from the strategy,
@@ -66,11 +67,11 @@ class BBRSI21(IStrategy):
               #  (dataframe['adx'] > 25) &
                 (dataframe['rsi'] < 21)
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators.
         Can be a copy of the corresponding method from the strategy,
@@ -90,5 +91,5 @@ class BBRSI21(IStrategy):
           #      )) &
           #      (dataframe['fastd'] > 54)
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe

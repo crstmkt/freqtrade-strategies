@@ -14,6 +14,7 @@ import talib.abstract as ta
 
 
 class MabStra(IStrategy):
+    INTERFACE_VERSION = 3
 
     # #################### RESULTS PASTE PLACE ####################
     # ROI table:
@@ -64,7 +65,7 @@ class MabStra(IStrategy):
                                           timeperiod=self.sell_slow_ma_timeframe.value)
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
             (
@@ -77,11 +78,11 @@ class MabStra(IStrategy):
                 (dataframe['buy-fastMA'].div(dataframe['buy-slowMA'])
                     < self.buy_div_max.value)
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['sell-fastMA'].div(dataframe['sell-mojoMA'])
@@ -93,5 +94,5 @@ class MabStra(IStrategy):
                 (dataframe['sell-slowMA'].div(dataframe['sell-fastMA'])
                     < self.sell_div_max.value)
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe

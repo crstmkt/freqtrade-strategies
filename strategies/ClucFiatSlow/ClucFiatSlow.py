@@ -8,6 +8,7 @@ from freqtrade.persistence import Trade
 from pandas import DataFrame, Series
 
 class ClucFiatSlow(IStrategy):
+    INTERFACE_VERSION = 3
 
     # Buy hyperspace params:
     buy_params = {
@@ -51,10 +52,10 @@ class ClucFiatSlow(IStrategy):
     
     timeframe = '5m'
 
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.01
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.01
+    ignore_roi_if_entry_signal = True
 
     startup_candle_count: int = 48
 
@@ -85,7 +86,7 @@ class ClucFiatSlow(IStrategy):
         
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.buy_params
 
         dataframe.loc[
@@ -104,12 +105,12 @@ class ClucFiatSlow(IStrategy):
                     (dataframe['close'] < params['close-bblower'] * dataframe['lower-bb2']) &
                     (dataframe['volume'] < (dataframe['volume_mean_slow'].shift(1) * params['volume']))
             )),
-            'buy'
+            'enter_long'
         ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.sell_params
 
         dataframe.loc[
@@ -118,7 +119,7 @@ class ClucFiatSlow(IStrategy):
             dataframe['fisher-rsi'].gt(params['sell-fisher']) &
             dataframe['volume'].gt(0)
             ,
-            'sell'
+            'exit_long'
         ] = 1
 
         return dataframe
@@ -128,7 +129,7 @@ class ClucFiatSlow(IStrategy):
 
     Custom Order Timeouts
     """
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_entry_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 1% above the order.
@@ -137,7 +138,7 @@ class ClucFiatSlow(IStrategy):
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_exit_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]
         # Cancel sell order if price is more than 1% below the order.

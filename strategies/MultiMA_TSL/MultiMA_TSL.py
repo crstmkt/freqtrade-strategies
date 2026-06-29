@@ -23,7 +23,7 @@ from technical.indicators import zema
 # Any profits and losses are all your responsibility
 
 class MultiMA_TSL(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     buy_params = {
         "base_nb_candles_buy_ema": 50,
@@ -138,10 +138,10 @@ class MultiMA_TSL(IStrategy):
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = True
 
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    # These values can be overridden in the "exit_pricing" section in the config.
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 200
@@ -175,16 +175,16 @@ class MultiMA_TSL(IStrategy):
         
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         dataframe['ema_offset_buy'] = ta.EMA(dataframe, int(self.base_nb_candles_buy_ema.value)) *self.low_offset_ema.value
         dataframe['zema_offset_buy'] = zema(dataframe, int(self.base_nb_candles_buy_zema.value)) *self.low_offset_zema.value
         dataframe['trima_offset_buy'] = ta.TRIMA(dataframe, int(self.base_nb_candles_buy_trima.value)) *self.low_offset_trima.value
         
-        dataframe.loc[:, 'buy_tag'] = ''
+        dataframe.loc[:, 'enter_tag'] = ''
         dataframe.loc[:, 'buy_copy'] = 0
-        dataframe.loc[:, 'buy'] = 0
+        dataframe.loc[:, 'enter_long'] = 0
 
         buy_offset_trima = (
             self.buy_condition_trima_enable.value &
@@ -199,7 +199,7 @@ class MultiMA_TSL(IStrategy):
                 )
             )
         )
-        dataframe.loc[buy_offset_trima, 'buy_tag'] += 'trima '
+        dataframe.loc[buy_offset_trima, 'enter_tag'] += 'trima '
         conditions.append(buy_offset_trima)
 
         buy_offset_zema = (
@@ -215,7 +215,7 @@ class MultiMA_TSL(IStrategy):
                 )
             )
         )
-        dataframe.loc[buy_offset_zema, 'buy_tag'] += 'zema '
+        dataframe.loc[buy_offset_zema, 'enter_tag'] += 'zema '
         conditions.append(buy_offset_zema)
 
         add_check = (
@@ -229,12 +229,12 @@ class MultiMA_TSL(IStrategy):
         if conditions:
             dataframe.loc[
                 (add_check & reduce(lambda x, y: x | y, conditions)),
-                ['buy_copy','buy']
+                ['buy_copy','enter_long']
             ]=(1,1)
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[:, 'sell_copy'] = 0
 
         dataframe['ema_offset_sell'] = ta.EMA(dataframe, int(self.base_nb_candles_sell.value)) *self.high_offset_ema.value
@@ -259,11 +259,11 @@ class MultiMA_TSL(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                ['sell_copy', 'sell']
+                ['sell_copy', 'exit_long']
             ]=(1,1)
 
         if not self.config['runmode'].value in ('backtest', 'hyperopt'):
-            dataframe.loc[:, 'sell'] = 0
+            dataframe.loc[:, 'exit_long'] = 0
 
         return dataframe
 

@@ -13,6 +13,7 @@ import numpy  # noqa
 
 
 class SmoothOperator(IStrategy):
+    INTERFACE_VERSION = 3
     """
 
     author@: Gert Wohlgemuth
@@ -101,7 +102,7 @@ class SmoothOperator(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
 
@@ -167,11 +168,11 @@ class SmoothOperator(IStrategy):
                 # ensure we have an overall uptrend
                 (dataframe['close'] > dataframe['close'].shift())
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # different strategy used for sell points, due to be able to duplicate it to 100%
         dataframe.loc[
             (
@@ -200,7 +201,7 @@ class SmoothOperator(IStrategy):
                 )
 
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe
 
 

@@ -8,6 +8,7 @@ import talib.abstract as ta
 
 
 class ADXMomentum(IStrategy):
+    INTERFACE_VERSION = 3
     """
 
     author@: Gert Wohlgemuth
@@ -43,7 +44,7 @@ class ADXMomentum(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                     (dataframe['adx'] > 25) &
@@ -52,10 +53,10 @@ class ADXMomentum(IStrategy):
                     (dataframe['plus_di'] > dataframe['minus_di'])
 
             ),
-            'buy'] = 1
+            'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                     (dataframe['adx'] > 25) &
@@ -64,5 +65,5 @@ class ADXMomentum(IStrategy):
                     (dataframe['plus_di'] < dataframe['minus_di'])
 
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe

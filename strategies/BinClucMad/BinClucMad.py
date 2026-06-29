@@ -22,7 +22,7 @@ def SSLChannels(dataframe, length=7):
 
 
 class BinClucMad(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     minimal_roi = {
         "0": 0.038,         # I feel lucky!
@@ -37,10 +37,10 @@ class BinClucMad(IStrategy):
     informative_timeframe = "1h"
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.001  # it doesn't meant anything, just to guarantee there is a minimal profit.
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.001  # it doesn't meant anything, just to guarantee there is a minimal profit.
+    ignore_roi_if_entry_signal = False
 
     # Trailing stoploss
     trailing_stop = False
@@ -59,8 +59,8 @@ class BinClucMad(IStrategy):
 
     # Optional order type mapping.
     order_types = {
-        "buy": "market",
-        "sell": "market",
+        "entry": "market",
+        "exit": "market",
         "stoploss": "market",
         "stoploss_on_exchange": False,
     }
@@ -230,7 +230,7 @@ class BinClucMad(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         # START  VERSION9
         if self.v9_buy_condition_1_enable.value:
@@ -432,11 +432,11 @@ class BinClucMad(IStrategy):
         # END  V6
 
         if conditions:
-            dataframe.loc[reduce(lambda x, y: x | y, conditions), "buy"] = 1
+            dataframe.loc[reduce(lambda x, y: x | y, conditions), "enter_long"] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         if self.v9_sell_condition_0_enable.value:
             conditions.append(
@@ -460,6 +460,6 @@ class BinClucMad(IStrategy):
             conditions.append(((dataframe["rsi"] > self.v8_sell_rsi_main.value) & (dataframe["volume"] > 0)))
 
         if conditions:
-            dataframe.loc[reduce(lambda x, y: x | y, conditions), "sell"] = 1
+            dataframe.loc[reduce(lambda x, y: x | y, conditions), "exit_long"] = 1
 
         return dataframe

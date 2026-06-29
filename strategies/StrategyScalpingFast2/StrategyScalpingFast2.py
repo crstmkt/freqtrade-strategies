@@ -11,6 +11,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class StrategyScalpingFast2(IStrategy):
+    INTERFACE_VERSION = 3
     """
         Based on ReinforcedSmoothScalp
         https://github.com/freqtrade/freqtrade-strategies/blob/master/user_data/strategies/berlinguyinca/ReinforcedSmoothScalp.py
@@ -51,7 +52,7 @@ class StrategyScalpingFast2(IStrategy):
         "51": 0.012,
         "123": 0
     }
-    use_sell_signal = False
+    use_exit_signal = False
     # Stoploss:
     stoploss = -0.326
     # Minimal ROI designed for the strategy.
@@ -97,7 +98,7 @@ class StrategyScalpingFast2(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(dataframe["volume"] > 0)
@@ -121,10 +122,10 @@ class StrategyScalpingFast2(IStrategy):
         # (dataframe['mfi'] < 30) &
         # (dataframe['cci'] < -200)
         if conditions:
-            dataframe.loc[reduce(lambda x, y: x & y, conditions), "buy"] = 1            
+            dataframe.loc[reduce(lambda x, y: x & y, conditions), "enter_long"] = 1            
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         conditions.append(dataframe['open'] >= dataframe['ema_high'])
 
@@ -139,5 +140,5 @@ class StrategyScalpingFast2(IStrategy):
             conditions.append(dataframe["adx"] < self.sell_params['sell-adx-value'])            
 
         if conditions:
-            dataframe.loc[reduce(lambda x, y: x & y, conditions), "sell"] = 1              
+            dataframe.loc[reduce(lambda x, y: x & y, conditions), "exit_long"] = 1              
         return dataframe

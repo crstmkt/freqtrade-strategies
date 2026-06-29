@@ -10,6 +10,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class ONUR(IStrategy):
+    INTERFACE_VERSION = 3
     minimal_roi = {
         "0": 0.131,
         "109": 0.08,
@@ -25,11 +26,11 @@ class ONUR(IStrategy):
     timeframe = '15m'
 
     order_types = {
-        "buy": "limit",
-        "sell": "limit",
-        "emergencysell": "market",
-        "forcebuy": "market",
-        "forcesell": "market",
+        "entry": "limit",
+        "exit": "limit",
+        "emergency_exit": "market",
+        "force_entry": "market",
+        "force_exit": "market",
         "stoploss": "market",
         "stoploss_on_exchange": True,
         "stoploss_on_exchange_interval": 60,
@@ -48,21 +49,21 @@ class ONUR(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['rsi'] < 74)
                 & (dataframe['close'] > dataframe['bb_middleband'])
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 # (dataframe['close'] > dataframe['bb_upperband'])
             ),
-            'sell'] = 1
+            'exit_long'] = 1
 
         return dataframe

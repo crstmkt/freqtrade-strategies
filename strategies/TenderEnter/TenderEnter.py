@@ -27,12 +27,12 @@ class TenderEnter(IStrategy):
 
     You must keep:
     - the lib in the section "Do not remove these libs"
-    - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_buy_trend,
-    populate_sell_trend, hyperopt_space, buy_strategy_generator
+    - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_entry_trend,
+    populate_exit_trend, hyperopt_space, buy_strategy_generator
     """
     # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     custom_stops = {}
     # Minimal ROI designed for the strategy.
@@ -81,10 +81,10 @@ class TenderEnter(IStrategy):
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False
 
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = False
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = True
+    # These values can be overridden in the "exit_pricing" section in the config.
+    use_exit_signal = False
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = True
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 102
@@ -92,16 +92,16 @@ class TenderEnter(IStrategy):
     
     # Optional order type mapping.
     order_types = {
-        'buy': 'market',
-        'sell': 'market',
+        'entry': 'market',
+        'exit': 'market',
         'stoploss': 'market',
         'stoploss_on_exchange': True
     }
 
     # Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc'
+        'entry': 'gtc',
+        'exit': 'gtc'
     }
     
 
@@ -370,7 +370,7 @@ class TenderEnter(IStrategy):
         # dataframe = merge_informative_pair(dataframe, informative, self.timeframe, self.inf_tf, ffill=True)
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame populated with indicators
@@ -383,7 +383,7 @@ class TenderEnter(IStrategy):
             self.compareFields(dataframe, 'close', 2, 1017) &
             self.compareFields(dataframe, 'volume', 1, 65) &
             self.compareFields(dataframe, 'volume', 2, 65) &
-            (dataframe['volume'] > 0)),'buy'] = 1
+            (dataframe['volume'] > 0)),'enter_long'] = 1
         return dataframe
 
     def compareFields(self, dt, fieldname, shift, ratio=1.034):
@@ -404,11 +404,11 @@ class TenderEnter(IStrategy):
     #         return False
 
     # def confirm_trade_exit(self, pair: str, trade, order_type: str, amount: float,
-    #                        rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+    #                        rate: float, time_in_force: str, exit_reason: str, **kwargs) -> bool:
     #     self.custom_stops[metadata["pair"]] = True
     #     return True
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame populated with indicators
@@ -421,7 +421,7 @@ class TenderEnter(IStrategy):
                 # (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
-            'sell'] = 0
+            'exit_long'] = 0
         return dataframe
     
     # def merge_informative_pair(dataframe, informative, minutes, inf_tf, ffill):

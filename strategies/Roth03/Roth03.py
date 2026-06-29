@@ -11,6 +11,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class Roth03(IStrategy):
+    INTERFACE_VERSION = 3
 
     #  7205/10000:    499 trades. 251/240/8 Wins/Draws/Losses. Avg profit   0.51%. Median profit   0.01%. Total profit  0.00137449 BTC ( 254.47Î£%). Avg duration 746.7 min. Objective: 0.15177
 
@@ -84,7 +85,7 @@ class Roth03(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
@@ -97,11 +98,11 @@ class Roth03(IStrategy):
                 (dataframe['mfi'] < 20.0)
                 # (dataframe['cci'] <= -57.0)
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
@@ -118,6 +119,6 @@ class Roth03(IStrategy):
                 (dataframe['mfi'] > 86) &
                 (dataframe['fastd'] > 79)
             ),
-            'sell'] = 1
+            'exit_long'] = 1
 
         return dataframe

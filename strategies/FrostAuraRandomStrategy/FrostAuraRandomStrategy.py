@@ -15,7 +15,7 @@ class FrostAuraRandomStrategy(IStrategy):
     """
     # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # Minimal ROI designed for the strategy.
     minimal_roi = {
@@ -37,26 +37,26 @@ class FrostAuraRandomStrategy(IStrategy):
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False
 
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    # These values can be overridden in the "exit_pricing" section in the config.
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     # Number of candles the strategy requires before producing valid signals.
     startup_candle_count: int = 30
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'market',
-        'sell': 'market',
+        'entry': 'market',
+        'exit': 'market',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
 
     # Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc'
+        'entry': 'gtc',
+        'exit': 'gtc'
     }
 
     plot_config = {
@@ -83,27 +83,27 @@ class FrostAuraRandomStrategy(IStrategy):
     buy_prediction_delta_direction = CategoricalParameter(['<', '>'], default='>', space='buy')
     buy_probability = IntParameter([0, 100], default=76, space='buy')
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         random_number = dataframe['random_number']
 
         dataframe.loc[
             (
                 (random_number < self.buy_probability.value if self.buy_prediction_delta_direction.value == '<' else random_number > self.buy_probability.value)
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
     sell_prediction_delta_direction = CategoricalParameter(['<', '>'], default='<', space='sell')
     sell_probability = IntParameter([0, 100], default=0, space='sell')
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         random_number = dataframe['random_number']
 
         dataframe.loc[
             (
                 (random_number < self.sell_probability.value if self.sell_prediction_delta_direction.value == '<' else random_number > self.sell_probability.value)
             ),
-            'sell'] = 1
+            'exit_long'] = 1
 
         return dataframe

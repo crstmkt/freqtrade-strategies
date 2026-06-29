@@ -25,7 +25,7 @@ from functools import reduce
 ##   Prefer stable coin (USDT, BUSDT etc) pairs, instead of BTC or ETH pairs.                            ##
 ##   Highly recommended to blacklist leveraged tokens (*BULL, *BEAR, *UP, *DOWN etc).                    ##
 ##   Ensure that you don't override any variables in you config.json. Especially                         ##
-##   the timeframe (must be 5m) & sell_profit_only (must be true).                                       ##
+##   the timeframe (must be 5m) & exit_profit_only (must be true).                                       ##
 ##                                                                                                       ##
 ###########################################################################################################
 ##               DONATIONS                                                                               ##
@@ -51,7 +51,7 @@ def SSLChannels(dataframe, length = 7):
 
 
 class CombinedBinHAndClucV7(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     minimal_roi = {
         "0": 0.0181
@@ -63,10 +63,10 @@ class CombinedBinHAndClucV7(IStrategy):
     inf_1h = '1h' # informative tf
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = True
-    sell_profit_offset = 0.001 # it doesn't meant anything, just to guarantee there is a minimal profit.
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = True
+    exit_profit_offset = 0.001 # it doesn't meant anything, just to guarantee there is a minimal profit.
+    ignore_roi_if_entry_signal = True
 
     # Trailing stoploss
     trailing_stop = True
@@ -85,8 +85,8 @@ class CombinedBinHAndClucV7(IStrategy):
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
@@ -130,13 +130,13 @@ class CombinedBinHAndClucV7(IStrategy):
         return 0.99
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, exit_reason: str, **kwargs) -> bool:
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
         # Prevent sell, if there is more potential, in order to maximize profit
         if (last_candle is not None):
             current_profit = trade.calc_profit_ratio(rate)
-            if (sell_reason == 'roi'):
+            if (exit_reason == 'roi'):
                 if (current_profit > self.sell_roi_profit_1.value):
                     if (last_candle['rsi'] > self.sell_roi_rsi_1.value):
                         return False
@@ -214,7 +214,7 @@ class CombinedBinHAndClucV7(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -285,12 +285,12 @@ class CombinedBinHAndClucV7(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -312,7 +312,7 @@ class CombinedBinHAndClucV7(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ] = 1
 
         return dataframe

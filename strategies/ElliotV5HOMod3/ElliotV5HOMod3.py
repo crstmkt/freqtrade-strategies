@@ -24,7 +24,7 @@ def EWO(dataframe, ema_length=5, ema2_length=35):
 
 
 class ElliotV5HOMod3(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # Buy hyperspace params:
     buy_params = {
@@ -76,22 +76,22 @@ class ElliotV5HOMod3(IStrategy):
     trailing_only_offset_is_reached = True
 
     # Sell signal
-    use_sell_signal = False
-    sell_profit_only = False
-    sell_profit_offset = 0.01
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = False
+    exit_profit_only = False
+    exit_profit_offset = 0.01
+    ignore_roi_if_entry_signal = True
 
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
 
     # Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc'
+        'entry': 'gtc',
+        'exit': 'gtc'
     }
 
     # Optimal timeframe for the strategy
@@ -151,7 +151,7 @@ class ElliotV5HOMod3(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -174,12 +174,12 @@ class ElliotV5HOMod3(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ]=1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -192,7 +192,7 @@ class ElliotV5HOMod3(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ]=1
 
         return dataframe

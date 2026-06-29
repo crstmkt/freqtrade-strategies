@@ -20,7 +20,7 @@ ma_types = {
 
 
 class SMAIP3v2(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # hyperopt and paste results here
     # Buy hyperspace params:
@@ -67,9 +67,9 @@ class SMAIP3v2(IStrategy):
     # Optimal timeframe for the strategy
     timeframe = '5m'
 
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     process_only_new_candles = True
     startup_candle_count = 200
@@ -83,7 +83,7 @@ class SMAIP3v2(IStrategy):
 
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -91,7 +91,7 @@ class SMAIP3v2(IStrategy):
         previous_candle_1 = dataframe.iloc[-2]
 
         if (last_candle is not None):
-            if (sell_reason in ['roi','sell_signal','trailing_stop_loss']):
+            if (exit_reason in ['roi','exit_signal','trailing_stop_loss']):
                 if (last_candle['open'] > previous_candle_1['open']) and (last_candle['rsi'] > 50) and (last_candle['rsi'] > previous_candle_1['rsi']):
                     return False
         return True
@@ -117,7 +117,7 @@ class SMAIP3v2(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         if self.config['runmode'].value == 'hyperopt':
             dataframe['ma_offset_buy'] = ma_types[self.buy_trigger.value](dataframe,
                                                                           int(self.base_nb_candles_buy.value)) * self.low_offset.value
@@ -136,10 +136,10 @@ class SMAIP3v2(IStrategy):
                     (dataframe['volume'] > 0)
 #                    & dataframe['btc_up']
             ),
-            'buy'] = 1
+            'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         if self.config['runmode'].value == 'hyperopt':
             dataframe['ma_offset_sell'] = ma_types[self.sell_trigger.value](dataframe,
                                                                             int(self.base_nb_candles_sell.value)) * self.high_offset.value
@@ -149,5 +149,5 @@ class SMAIP3v2(IStrategy):
                     (dataframe['close'] > dataframe['ma_offset_sell']) &
                     (dataframe['volume'] > 0)
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe

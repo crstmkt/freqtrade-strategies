@@ -10,6 +10,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class BBRSI2(IStrategy):
+    INTERFACE_VERSION = 3
     minimal_roi = {
         "0": 0.30,
         "120": 0.20,
@@ -24,11 +25,11 @@ class BBRSI2(IStrategy):
     trailing_stop = True
 
     order_types = {
-        "buy": "limit",
-        "sell": "limit",
-        "emergencysell": "market",
-        "forcebuy": "market",
-        "forcesell": "market",
+        "entry": "limit",
+        "exit": "limit",
+        "emergency_exit": "market",
+        "force_entry": "market",
+        "force_exit": "market",
         "stoploss": "market",
         "stoploss_on_exchange": True,
         "stoploss_on_exchange_interval": 60,
@@ -48,22 +49,22 @@ class BBRSI2(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['rsi'] > 35)
                 & (dataframe['close'] < dataframe['bb_lowerband'])
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['rsi'] > 75)
                 & (dataframe['close'] > dataframe['bb_middleband'])
             ),
-            'sell'] = 1
+            'exit_long'] = 1
 
         return dataframe

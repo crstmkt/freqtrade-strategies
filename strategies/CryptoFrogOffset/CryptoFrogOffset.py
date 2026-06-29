@@ -19,6 +19,7 @@ from freqtrade.persistence import Trade
 from skopt.space import Dimension
 
 class CryptoFrogOffset(IStrategy):
+    INTERFACE_VERSION = 3
 
     # ROI table - this strat REALLY benefits from roi and trailing hyperopt:
     minimal_roi = {
@@ -80,10 +81,10 @@ class CryptoFrogOffset(IStrategy):
     process_only_new_candles = True
 
     # Experimental settings (configuration will overide these if set)
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.01
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.01
+    ignore_roi_if_entry_signal = False
 
     use_dynamic_roi = True    
     
@@ -92,8 +93,8 @@ class CryptoFrogOffset(IStrategy):
 
     # Optional order type mapping
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
@@ -1525,7 +1526,7 @@ class CryptoFrogOffset(IStrategy):
     sell_custom_stoploss_pump_loss_3 = DecimalParameter(-0.16, -0.06, default=-0.12, space='sell', decimals=3, optimize=False, load=True)
     sell_custom_stoploss_pump_ma_offset_3 = DecimalParameter(0.7, 0.99, default=0.88, space='sell', decimals=2, optimize=False, load=True)
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
@@ -1986,7 +1987,7 @@ class CryptoFrogOffset(IStrategy):
         return dataframe
 
     ## cryptofrog signals
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (
@@ -2044,12 +2045,12 @@ class CryptoFrogOffset(IStrategy):
                     (dataframe['volume'] > 0)                    
                 )
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
     
     ## more going on here
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -2132,7 +2133,7 @@ class CryptoFrogOffset(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ] = 1
 
         return dataframe
@@ -2237,10 +2238,10 @@ class CryptoFrogOffset(IStrategy):
             if rate:
                 return rate
 
-        ask_strategy = self.config.get('ask_strategy', {})
-        if ask_strategy.get('use_order_book', False):
+        exit_pricing = self.config.get('exit_pricing', {})
+        if exit_pricing.get('use_order_book', False):
             ob = self.dp.orderbook(pair, 1)
-            rate = ob[f"{ask_strategy['price_side']}s"][0][0]
+            rate = ob[f"{exit_pricing['price_side']}s"][0][0]
         else:
             ticker = self.dp.ticker(pair)
             rate = ticker['last']

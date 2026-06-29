@@ -4,6 +4,7 @@ import talib.abstract as ta
 
 
 class JustROCR6(IStrategy):
+    INTERFACE_VERSION = 3
     minimal_roi = {
         "0": 0.05
     }
@@ -23,7 +24,7 @@ class JustROCR6(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['rocr_499'] > 1.20) &
@@ -34,12 +35,12 @@ class JustROCR6(IStrategy):
                 (dataframe['rocr_5'] > 1.05) &
                 (dataframe['rocr_2'] > 1.01)
             ),
-            'buy'] = 1
+            'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe

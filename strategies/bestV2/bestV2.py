@@ -60,7 +60,7 @@ def EWO(dataframe, ema_length=5, ema2_length=35):
     return emadif
 
 class bestV2(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # ROI table:
     minimal_roi = {
@@ -99,15 +99,15 @@ class bestV2(IStrategy):
     trailing_only_offset_is_reached = True
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.01
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.01
+    ignore_roi_if_entry_signal = True
 
     ## Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'ioc'
+        'entry': 'gtc',
+        'exit': 'ioc'
     }
 
     # Optimal timeframe for the strategy
@@ -158,7 +158,7 @@ class bestV2(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -181,12 +181,12 @@ class bestV2(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'
+                'enter_long'
             ]=1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
 
         conditions.append(
@@ -199,7 +199,7 @@ class bestV2(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'sell'
+                'exit_long'
             ]=1
 
         return dataframe

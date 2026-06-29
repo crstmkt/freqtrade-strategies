@@ -20,6 +20,7 @@ def ha_typical_price(bars):
 
 
 class ClucHAnix(IStrategy):
+    INTERFACE_VERSION = 3
 
     """
     PASTE OUTPUT FROM HYPEROPT HERE
@@ -68,9 +69,9 @@ class ClucHAnix(IStrategy):
     timeframe = '1m'
 
     # Make sure these match or are not overridden in config
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     # Custom stoploss
     use_custom_stoploss = True
@@ -79,11 +80,11 @@ class ClucHAnix(IStrategy):
     startup_candle_count = 168
 
     order_types = {
-        'buy': 'market',
-        'sell': 'market',
-        'emergencysell': 'market',
-        'forcebuy': "market",
-        'forcesell': 'market',
+        'entry': 'market',
+        'exit': 'market',
+        'emergency_exit': 'market',
+        'force_entry': "market",
+        'force_exit': 'market',
         'stoploss': 'market',
         'stoploss_on_exchange': False,
 
@@ -176,7 +177,7 @@ class ClucHAnix(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.buy_params
 
         dataframe.loc[
@@ -195,12 +196,12 @@ class ClucHAnix(IStrategy):
                     (dataframe['ha_close'] < dataframe['ema_slow']) &
                     (dataframe['ha_close'] < params['close-bblower'] * dataframe['bb_lowerband']) 
             )),
-            'buy'
+            'enter_long'
         ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.sell_params
 
         dataframe.loc[
@@ -212,7 +213,7 @@ class ClucHAnix(IStrategy):
             ((dataframe['ha_close'] * params['sell-bbmiddle-close']) > dataframe['bb_middleband']) &
             (dataframe['volume'] > 0)
             ,
-            'sell'
+            'exit_long'
         ] = 1
 
         return dataframe

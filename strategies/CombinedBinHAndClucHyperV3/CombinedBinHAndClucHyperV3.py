@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 import math
 
 class CombinedBinHAndClucHyperV3(IStrategy):
+    INTERFACE_VERSION = 3
     # Based on a backtesting:
     # - the best perfomance is reached with "max_open_trades" = 2 (in average for any market),
     #   so it is better to increase "stake_amount" value rather then "max_open_trades" to get more profit
@@ -20,9 +21,9 @@ class CombinedBinHAndClucHyperV3(IStrategy):
     #   "max_open_trades" = 2 and minimal_roi = 0.01
     timeframe = '1m'
 
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     # ----------------------------------------------------------------
     # Hyper Params
@@ -138,7 +139,7 @@ class CombinedBinHAndClucHyperV3(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         buy_a_time_window = self.buy_a_time_window.value if isinstance(self.buy_a_time_window, ABC) else self.buy_a_time_window
         buy_a_bbdelta_rate = self.buy_a_bbdelta_rate.value if isinstance(self.buy_a_bbdelta_rate, ABC) else self.buy_a_bbdelta_rate
         buy_a_closedelta_rate = self.buy_a_closedelta_rate.value if isinstance(self.buy_a_closedelta_rate, ABC) else self.buy_a_closedelta_rate
@@ -172,12 +173,12 @@ class CombinedBinHAndClucHyperV3(IStrategy):
                     (dataframe['volume'] < (dataframe[f'volume_mean_slow_{buy_b_volume_mean_slow_window}'].shift(1) * buy_b_volume_mean_slow_num))
             )
             ,
-            'buy'
+            'enter_long'
         ] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         sell_bb_mid_slow_window = self.sell_bb_mid_slow_window.value if isinstance(self.sell_bb_mid_slow_window, ABC) else self.sell_bb_mid_slow_window
-        dataframe.loc[(dataframe['close'] > dataframe[f'bb_typical_mid_{sell_bb_mid_slow_window}']), 'sell'] = 1
+        dataframe.loc[(dataframe['close'] > dataframe[f'bb_typical_mid_{sell_bb_mid_slow_window}']), 'exit_long'] = 1
         return dataframe

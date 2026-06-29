@@ -33,6 +33,7 @@ def ssl_atr(dataframe, length = 7):
     return df['sslDown'], df['sslUp']
 
 class Obelisk_Ichimoku_ZEMA_v1(IStrategy):
+    INTERFACE_VERSION = 3
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
@@ -218,32 +219,32 @@ class Obelisk_Ichimoku_ZEMA_v1(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         zema = f'zema_{self.zema_len_buy.value}'
 
         dataframe.loc[
             (dataframe['ichimoku_valid'] > 0)
             & (dataframe['bear_trending'] == 0)
             & (dataframe['close'] < (dataframe[zema] * self.low_offset.value))
-        , 'buy'] = 1
+        , 'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         zema = f'zema_{self.zema_len_sell.value}'
 
         dataframe.loc[
             (
                 (dataframe['close'] > (dataframe[zema] * self.high_offset.value))
             )
-        , 'sell'] = 1
+        , 'exit_long'] = 1
 
         return dataframe
 
     def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: 'datetime', **kwargs) -> bool:
 
-        if sell_reason in ('roi',):
+        if exit_reason in ('roi',):
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             current_candle = dataframe.iloc[-1]
             if current_candle is not None:

@@ -29,13 +29,13 @@ class PRICEFOLLOWING(IStrategy):
 
     You must keep:
     - the lib in the section "Do not remove these libs"
-    - the methods: populate_indicators, populate_buy_trend, populate_sell_trend
+    - the methods: populate_indicators, populate_entry_trend, populate_exit_trend
     You should keep:
     - timeframe, minimal_roi, stoploss, trailing_*
     """
     # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi".
@@ -71,25 +71,25 @@ class PRICEFOLLOWING(IStrategy):
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False
 
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = True
-    sell_profit_only = True
-    ignore_roi_if_buy_signal = True
+    # These values can be overridden in the "exit_pricing" section in the config.
+    use_exit_signal = True
+    exit_profit_only = True
+    ignore_roi_if_entry_signal = True
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 15
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False
     }
 
     # Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc'
+        'entry': 'gtc',
+        'exit': 'gtc'
     }
 
     plot_config = {
@@ -207,7 +207,7 @@ class PRICEFOLLOWING(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         #rsi_enabled = BooleanParameter(default=True, space='buy', optimize=True)
 
@@ -232,11 +232,11 @@ class PRICEFOLLOWING(IStrategy):
         if Conditions:
              dataframe.loc[
                  reduce(lambda x, y: x & y, Conditions),
-                 'buy'] = 1
+                 'enter_long'] = 1
        
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
             
             haopen = dataframe['ha_open']
             haclose = dataframe['ha_close']
@@ -258,6 +258,6 @@ class PRICEFOLLOWING(IStrategy):
             if conditions:
                  dataframe.loc[
                       reduce(lambda x, y: x & y, conditions),
-                      'sell'] = 1
+                      'exit_long'] = 1
 
             return dataframe

@@ -30,7 +30,7 @@ def moderi(dataframe: DataFrame, len_slow_ma: int = 32) -> Series:
     return slow_ma >= slow_ma.shift(1)  # we just need true & false for ERI trend
 
 class BBRSITV(IStrategy):
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # Buy hyperspace params:
     buy_params = {
@@ -61,10 +61,10 @@ class BBRSITV(IStrategy):
     trailing_only_offset_is_reached = True  # value loaded from strategy
 
     # Sell signal
-    use_sell_signal = True
-    sell_profit_only = False
-    sell_profit_offset = 0.01
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    exit_profit_offset = 0.01
+    ignore_roi_if_entry_signal = False
     process_only_new_candles = True
     startup_candle_count = 30
 
@@ -187,7 +187,7 @@ class BBRSITV(IStrategy):
         dataframe['EWO'] = EWO(dataframe, self.fast_ewo, self.slow_ewo)
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 # upper = basis + dev
@@ -201,10 +201,10 @@ class BBRSITV(IStrategy):
                 (dataframe['volume'] > 0)
 
             ),
-            'buy'] = 1
+            'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (
@@ -218,19 +218,19 @@ class BBRSITV(IStrategy):
                 (dataframe['volume'] > 0)
 
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe
 
 class BBRSITV4(BBRSITV):
     minimal_roi = {
         "0": 0.07
     }
-    ignore_roi_if_buy_signal = True
+    ignore_roi_if_entry_signal = True
     startup_candle_count = 400
 
     stoploss = -0.3  # value loaded from strategy
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['rsi'] < (dataframe[f'basis_{self.for_ma_length.value}'] - (dataframe[f'dev_{self.for_ma_length.value}'] * self.for_sigma.value)))
@@ -255,7 +255,7 @@ class BBRSITV4(BBRSITV):
                 # &
                 # (dataframe["roc_bbwidth_max"] < 70)
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
@@ -270,7 +270,7 @@ class BBRSITV1(BBRSITV):
 |               BBRSITV |    309 |           1.10 |         340.17 |          3869.800 |         128.99 |        2:53:00 |   223     0    86  72.2 |  261.984 USDT  25.84% |
 ============================================================================================================================================================================
     """
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # Buy hyperspace params:
     buy_params = {
@@ -351,7 +351,7 @@ class BBRSITV3(BBRSITV):
     | SMAOffsetProtectOptV1 |    417 |           1.33 |         555.91 |          8423.809 |         280.79 |        1:44:00 |   300     0   117  71.9 | 1056.072 USDT   61.08% |
     |               BBRSITV |    627 |           1.14 |         715.85 |         12998.605 |         433.29 |        5:35:00 |   374     0   253  59.6 | 2294.408 USDT  100.60% |
     ============================================================================================================================================================================="""
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # Buy hyperspace params:
     buy_params = {
@@ -385,7 +385,7 @@ class BBRSITV5(BBRSITV):
     minimal_roi = {
         "0": 0.04
     }
-    ignore_roi_if_buy_signal = True
+    ignore_roi_if_entry_signal = True
     startup_candle_count = 400
     use_custom_stoploss = True
 
@@ -436,7 +436,7 @@ class BBRSITV5(BBRSITV):
 
         return stoploss_from_open(sl_profit, current_profit)
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (dataframe['rsi'] < (dataframe[f'basis_{self.for_ma_length.value}'] - (dataframe[f'dev_{self.for_ma_length.value}'] * self.for_sigma.value)))
@@ -461,6 +461,6 @@ class BBRSITV5(BBRSITV):
                 # &
                 # (dataframe["roc_bbwidth_max"] < 70)
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe

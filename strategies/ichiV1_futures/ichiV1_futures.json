@@ -1,0 +1,31 @@
+{
+    "strategy_name": "ichiV1_futures",
+    "params": {
+        "buy": {
+            "buy_trend_above_senkou_level": 1,
+            "buy_trend_bullish_level": 2,
+            "buy_fan_magnitude_shift_value": 1,
+            "buy_min_fan_magnitude_gain": 1.001,
+            "short_trend_below_senkou_level": 1,
+            "short_trend_bearish_level": 2,
+            "short_fan_magnitude_shift_value": 1,
+            "short_max_fan_magnitude_gain": 0.999
+        },
+        "sell": {
+            "sell_trend_indicator": "trend_close_2h",
+            "exit_short_trend_indicator": "trend_close_2h"
+        },
+        "roi": {
+            "0": 0.059,
+            "10": 0.037,
+            "41": 0.012,
+            "114": 0
+        },
+        "stoploss": {
+            "stoploss": -0.05
+        },
+        "trailing": {
+            "trailing_stop": false
+        }
+    }
+}
